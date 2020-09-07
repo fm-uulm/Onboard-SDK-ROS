@@ -10,6 +10,7 @@
  */
 
 #include <dji_sdk/dji_sdk_node.h>
+#include <dji_sdk/ESCStatus.h>
 
 using namespace DJI::OSDK;
 
@@ -172,7 +173,7 @@ bool
 DJISDKNode::initFlightControl(ros::NodeHandle& nh)
 {
   flight_control_sub = nh.subscribe<sensor_msgs::Joy>(
-    "dji_sdk/flight_control_setpoint_generic", 10, 
+    "dji_sdk/flight_control_setpoint_generic", 10,
     &DJISDKNode::flightControlSetpointCallback,   this);
 
   flight_control_position_yaw_sub =
@@ -233,6 +234,9 @@ DJISDKNode::initPublisher(ros::NodeHandle& nh)
 
   battery_state_publisher =
     nh.advertise<sensor_msgs::BatteryState>("dji_sdk/battery_state",10);
+
+  esc_publisher =
+    nh.advertise<dji_sdk::ESCStatus>("dji_sdk/esc_status",10);
 
   /*!
    * - Fused attitude (duplicated from attitude topic)
@@ -461,6 +465,7 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
   topicList50Hz.push_back(Telemetry::TOPIC_RC);
   topicList50Hz.push_back(Telemetry::TOPIC_VELOCITY);
   topicList50Hz.push_back(Telemetry::TOPIC_GPS_CONTROL_LEVEL);
+  topicList50Hz.push_back(Telemetry::TOPIC_ESC_DATA);
 
   if(vehicle->getFwVersion() > versionBase33)
   {
@@ -472,7 +477,7 @@ DJISDKNode::initDataSubscribeFromFC(ros::NodeHandle& nh)
     std::string hardwareVersion(vehicle->getHwVersion());
     if( (hardwareVersion == std::string(Version::N3)) || hardwareVersion == std::string(Version::A3))
     {
-      topicList50Hz.push_back(Telemetry::TOPIC_RC_FULL_RAW_DATA);      
+      topicList50Hz.push_back(Telemetry::TOPIC_RC_FULL_RAW_DATA);
     }
 
     // Advertise rc connection status only if this topic is supported by FW

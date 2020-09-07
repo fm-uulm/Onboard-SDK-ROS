@@ -357,6 +357,7 @@ private:
   ros::Publisher angularRate_publisher;
   ros::Publisher acceleration_publisher;
   ros::Publisher battery_state_publisher;
+  ros::Publisher esc_publisher;
   ros::Publisher trigger_publisher;
   ros::Publisher imu_publisher;
   ros::Publisher flight_status_publisher;

@@ -12,6 +12,7 @@
 #include <dji_sdk/dji_sdk_node.h>
 #include <tf/tf.h>
 #include <sensor_msgs/Joy.h>
+#include <dji_sdk/ESCStatus.h>
 #include <dji_telemetry.hpp>
 
 #define _TICK2ROSTIME(tick) (ros::Duration((double)(tick) / 1000.0))
@@ -192,14 +193,14 @@ DJISDKNode::dataBroadcastCallback()
     flight_status_publisher.publish(flight_status);
   }
 
-  uint16_t flag_has_gimbal = 
+  uint16_t flag_has_gimbal =
           isM100() ? (data_enable_flag & DataBroadcast::DATA_ENABLE_FLAG::HAS_GIMBAL) :
           (data_enable_flag & DataBroadcast::DATA_ENABLE_FLAG::A3_HAS_GIMBAL);
   if (flag_has_gimbal)
   {
     Telemetry::Gimbal gimbal_reading;
 
-    
+
     Telemetry::Gimbal gimbal_angle = vehicle->broadcast->getGimbal();
 
     geometry_msgs::Vector3Stamped gimbal_angle_vec3;
@@ -426,6 +427,23 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
   status_dm.data = dm;
   p->displaymode_publisher.publish(status_dm);
 
+  Telemetry::TypeMap<Telemetry::TOPIC_ESC_DATA>::type esc_data =
+      vehicle->subscribe->getValue<Telemetry::TOPIC_ESC_DATA>();
+  dji_sdk::ESCStatus esc_status;
+  esc_status.header.stamp = msg_time;
+  for (auto i = 0; i < MAX_ESC_NUM; ++i) {
+    esc_status.current = esc_data.esc[i].current;
+    esc_status.speed = esc_data.esc[i].speed;
+    esc_status.voltage = esc_data.esc[i].voltage;
+    esc_status.temperature = esc_data.esc[i].temperature;
+    esc_status.stall = esc_data.esc[i].stall;
+    esc_status.empty = esc_data.esc[i].empty;
+    esc_status.unbalanced = esc_data.esc[i].unbalanced;
+    esc_status.escDisconnected = esc_data.esc[i].escDisconnected;
+    esc_status.temperatureHigh = esc_data.esc[i].temperatureHigh;
+  }
+  p->esc_publisher.publish(esc_status);
+
   /*!
    * note: Since FW version 3.3.0 and SDK version 3.7, we expose all the button on the LB2 RC
    *       as well as the RC connection status via different topics.
@@ -446,7 +464,7 @@ DJISDKNode::publish50HzData(Vehicle* vehicle, RecvContainer recvFrame,
     vo_pos.yHealth = vo_position.yHealth;
     vo_pos.zHealth = vo_position.zHealth;
     p->vo_position_publisher.publish(vo_pos);
-  
+
     Telemetry::TypeMap<Telemetry::TOPIC_RC_WITH_FLAG_DATA>::type rc_with_flag =
             vehicle->subscribe->getValue<Telemetry::TOPIC_RC_WITH_FLAG_DATA>();
 
